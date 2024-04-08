@@ -1,4 +1,4 @@
-<h1 align="center">Android Video Sample</h1>
+<h1 align="center">Android Video Samples</h1>
 
 <p align="center">
   <a href="https://github.com/GetStream/Android-Video-Samples/actions/workflows/android.yml"><img alt="Build Status" src="https://github.com/GetStream/Android-Video-Samples/actions/workflows/pr-checks.yml/badge.svg"/></a>
