@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://getstream.io/video/sdk/android/?utm_source=Github&utm_medium=Jaewoong_OSS&utm_content=Developer&utm_campaign=Github_April2024_Jaewoong_Android_Video_Samples&utm_term=DevRelOss">
-    <img src="previews/sdk-hero-android.png"/>
+    <img src="https://github.com/GetStream/Android-Video-Samples/assets/24237865/1a004cdd-5daa-4a0e-96ca-be35cb25871f"/>
   </a>
 </p>
 
