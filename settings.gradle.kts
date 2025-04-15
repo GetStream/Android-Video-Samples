@@ -23,3 +23,4 @@ rootProject.name = "Android-Video-Samples"
 include(":video-call-sample")
 include(":audio-room-sample")
 include(":livestreaming-sample")
+include(":livestreaming-guide")
