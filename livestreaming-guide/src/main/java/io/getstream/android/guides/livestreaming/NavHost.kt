@@ -1,6 +1,7 @@
 package io.getstream.android.guides.livestreaming
 
 import android.content.Context
+import android.media.AudioAttributes
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
@@ -100,6 +101,7 @@ private fun initStreamVideo(context: Context, userCredentials: UserCredentials):
                 register(CallType.Livestream.name) {
                     DefaultCallConfigurations.livestreamGuestCall.copy(
                         runCallServiceInForeground = false,
+                        audioUsage = AudioAttributes.USAGE_MEDIA,
                     )
                 }
             }

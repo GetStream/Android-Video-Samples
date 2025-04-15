@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,6 +43,8 @@ import io.getstream.android.video.generated.models.CallSettingsRequest
 import io.getstream.android.video.generated.models.MemberRequest
 import io.getstream.video.android.compose.permission.LaunchCallPermissions
 import io.getstream.video.android.compose.theme.VideoTheme
+import io.getstream.video.android.compose.ui.components.call.controls.actions.ToggleCameraAction
+import io.getstream.video.android.compose.ui.components.call.controls.actions.ToggleMicrophoneAction
 import io.getstream.video.android.compose.ui.components.video.VideoRenderer
 import io.getstream.video.android.compose.ui.components.video.VideoScalingType
 import io.getstream.video.android.compose.ui.components.video.config.videoRenderConfig
@@ -55,6 +59,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.threeten.bp.OffsetDateTime
 import org.threeten.bp.format.DateTimeFormatter
+import kotlin.math.max
 
 @Composable
 fun LivestreamScreen(navController: NavController, callId: String, streamVideo: StreamVideo, isHost: Boolean) {
@@ -138,39 +143,6 @@ private fun ConnectionMonitor(
         }
     }
 
-    Log.d(TAG, "Connection: $connection, Previous Connection: $prevConnection")
-
-    // region Debugging
-//    val connection by call.state.connection.collectAsStateWithLifecycle()
-//    var prevConnection by remember { mutableStateOf<RealtimeConnection?>(null) }
-//    var lastRecordedConnection by remember { mutableStateOf<RealtimeConnection?>(null) }
-//
-//    LaunchedEffect(connection) {
-//        if (connection != lastRecordedConnection) {
-//            lastRecordedConnection = connection
-//            if (connection != prevConnection) {
-//                Log.d(TAG, "Connection changed from $prevConnection to $connection")
-//                prevConnection = connection
-//            }
-//        }
-//    }
-
-//    var prevConnection by remember { mutableStateOf<RealtimeConnection?>(null) }
-//    var connection by remember { mutableStateOf<RealtimeConnection?>(null) }
-//
-//    LaunchedEffect(Unit) {
-//        call.state.connection
-//            .distinctUntilChanged()
-//            .collect { newConnection ->
-//                if (newConnection != prevConnection) {
-//                    Log.d(TAG, "Connection changed from $prevConnection to $newConnection")
-//                    connection = newConnection
-//                    prevConnection = connection
-//                }
-//            }
-//    }
-    // endregion
-
     val shouldShowMessage = connection is RealtimeConnection.Reconnecting ||
             connection is Failed ||
             (connection is RealtimeConnection.Disconnected && prevConnection is RealtimeConnection.Reconnecting)
@@ -233,7 +205,7 @@ private fun Backstage(call: Call, isHost: Boolean) {
 
         waitingCount?.let {
             Spacer(Modifier.height(16.dp))
-            Text("${it - 1} users waiting", style = VideoTheme.typography.bodyS)
+            Text("$it users waiting", style = VideoTheme.typography.bodyS)
         }
 
         if (isHost) {
@@ -273,7 +245,7 @@ private fun VideoFeed(
         call = call,
         video = videoTrack,
         videoRendererConfig = videoRenderConfig {
-            this.videoScalingType = VideoScalingType.SCALE_ASPECT_FIT
+            this.videoScalingType = VideoScalingType.SCALE_ASPECT_FILL
             this.fallbackContent = { videoFallbackContent }
         },
     )
@@ -283,6 +255,8 @@ private fun VideoFeed(
 private fun CallControls(call: Call) {
     val scope = rememberCoroutineScope()
     val backstage by call.state.backstage.collectAsStateWithLifecycle()
+    val isCameraEnabled by call.camera.isEnabled.collectAsStateWithLifecycle()
+    val isMicrophoneEnabled by call.microphone.isEnabled.collectAsStateWithLifecycle()
 
     Row(
         modifier = Modifier
@@ -311,6 +285,14 @@ private fun CallControls(call: Call) {
                 }
             }
         )
+
+        ToggleCameraAction(isCameraEnabled = isCameraEnabled) {
+            call.camera.setEnabled(it.isEnabled)
+        }
+
+        ToggleMicrophoneAction(isMicrophoneEnabled = isMicrophoneEnabled) {
+            call.microphone.setEnabled(it.isEnabled)
+        }
     }
 }
 
@@ -370,11 +352,14 @@ private fun Video(call: Call, isHost: Boolean) {
     val host = participants.firstOrNull { it.userId.value in hostIds }
     val track = host?.video?.collectAsStateWithLifecycle()?.value
     val totalParticipants by call.state.totalParticipants.collectAsStateWithLifecycle()
+    val viewers = max(0, totalParticipants - 1)
+    val duration by call.state.duration.collectAsStateWithLifecycle()
 
     Column {
         Box(modifier = Modifier.weight(1f)) {
             VideoFeed(call, track)
-            ParticipantCount(modifier = Modifier.align(Alignment.TopCenter), totalParticipants - 1)
+            InfoLabel(modifier = Modifier.align(Alignment.TopStart), "${duration ?: "0m 0s"}")
+            InfoLabel(modifier = Modifier.align(Alignment.TopEnd), "Viewers: $viewers")
         }
 
         if (isHost) {
@@ -384,18 +369,20 @@ private fun Video(call: Call, isHost: Boolean) {
 }
 
 @Composable
-private fun ParticipantCount(modifier: Modifier = Modifier, count: Int) {
+private fun InfoLabel(modifier: Modifier = Modifier, value: String) {
     Text(
         modifier = modifier.then(
             Modifier
-                .padding(vertical = 16.dp)
+                .widthIn(min = 100.dp)
+                .padding(all = 16.dp)
                 .background(
                     color = VideoTheme.colors.brandPrimary.copy(alpha = 0.65f),
                     shape = RoundedCornerShape(6.dp),
                 )
                 .padding(all = 8.dp)
         ),
-        text = "Watching: $count",
+        text = value,
+        textAlign = TextAlign.Center,
         color = Color.White,
     )
 }
