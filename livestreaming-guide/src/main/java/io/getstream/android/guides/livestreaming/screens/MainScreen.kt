@@ -14,7 +14,7 @@ import io.getstream.android.guides.livestreaming.Screens
 
 @Composable
 fun MainScreen(navController: NavController) {
-    val callId = "Tk8abhUdsV325675_dd" // Change this to a unique call ID for each session
+    val callId = "Tk8abhUdsV32567543t5" // Change this to a unique call ID for each session
 
     Column(
         modifier = Modifier.fillMaxSize(),
