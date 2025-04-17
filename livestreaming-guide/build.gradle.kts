@@ -8,7 +8,7 @@ android {
   compileSdk = 35
 
   defaultConfig {
-    applicationId = "io.getstream.android.livestreamingguide"
+    applicationId = "io.getstream.android.guides.livestreaming"
     minSdk = 24
     targetSdk = 35
     versionCode = 1

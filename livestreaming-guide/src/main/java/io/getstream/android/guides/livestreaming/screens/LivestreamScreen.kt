@@ -69,23 +69,21 @@ fun LivestreamScreen(navController: NavController, callId: String, streamVideo: 
 
     if (isHost) {
         LaunchCallPermissions(call = call, onAllPermissionsGranted = {
-            scope.launch {
-                call.create(
-                    members = listOf(
-                        MemberRequest(userId = "live-host", role = "host"),
+            call.create(
+                members = listOf(
+                    MemberRequest(userId = "live-host", role = "host"),
+                ),
+                settings = CallSettingsRequest(
+                    backstage = BackstageSettingsRequest(
+                        enabled = true,
+                        joinAheadTimeSeconds = 120,
                     ),
-                    settings = CallSettingsRequest(
-                        backstage = BackstageSettingsRequest(
-                            enabled = true,
-                            joinAheadTimeSeconds = 120,
-                        ),
-                    ),
-                    startsAt = OffsetDateTime.now().plusMinutes(3),
-                )
+                ),
+                startsAt = OffsetDateTime.now().plusMinutes(3),
+            )
 
-                withContext(Dispatchers.IO) { call.join() }
-                isLoading = false
-            }
+            withContext(Dispatchers.IO) { call.join() }
+            isLoading = false
         })
     } else {
         LaunchedEffect(Unit) {

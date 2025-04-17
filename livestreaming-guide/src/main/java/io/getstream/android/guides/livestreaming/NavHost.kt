@@ -86,7 +86,9 @@ sealed class Screens(val route: String) {
 }
 
 private fun initStreamVideo(context: Context, userCredentials: UserCredentials): StreamVideo {
-    return StreamVideo.instanceOrNull() ?: StreamVideoBuilder(
+    StreamVideo.removeClient()
+
+    return StreamVideoBuilder(
         context = context,
         apiKey = "k436tyde94hj",
         user = User(id = userCredentials.id, name = userCredentials.name),
