@@ -65,7 +65,6 @@ import kotlin.math.max
 fun LivestreamScreen(navController: NavController, callId: String, streamVideo: StreamVideo, isHost: Boolean) {
     val call = streamVideo.call("livestream", callId)
     var isLoading by remember { mutableStateOf(true) }
-    val scope = rememberCoroutineScope()
 
     if (isHost) {
         LaunchCallPermissions(call = call, onAllPermissionsGranted = {
@@ -92,7 +91,7 @@ fun LivestreamScreen(navController: NavController, callId: String, streamVideo: 
         }
     }
 
-    LivestreamScreenContents(call, isLoading, isHost)
+    LivestreamScreenContent(call, isLoading, isHost)
 
     BackHandler {
         call.leave()
@@ -101,24 +100,20 @@ fun LivestreamScreen(navController: NavController, callId: String, streamVideo: 
 }
 
 @Composable
-fun LivestreamScreenContents(call: Call, isJoinInProgress: Boolean, isHost: Boolean) {
+fun LivestreamScreenContent(call: Call, isJoinInProgress: Boolean, isHost: Boolean) {
     val isCallInBackstage by call.state.backstage.collectAsStateWithLifecycle()
-    val isCallEnded by call.state.endedAt.collectAsStateWithLifecycle()
+    val endedAt by call.state.endedAt.collectAsStateWithLifecycle()
 
     Box(contentAlignment = Alignment.Center) {
         ConnectionMonitor(call) {
             if (isJoinInProgress) {
-                LoadingScreen()
-            } else if (isCallEnded != null) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Livestream ended", style = VideoTheme.typography.subtitleM)
-                    Spacer(Modifier.height(24.dp))
-                    Recordings(call)
-                }
+                LoadingContent()
+            } else if (endedAt != null) {
+                CallEndedContent(call)
             } else if (isCallInBackstage) {
                 Backstage(call, isHost)
             } else {
-                Video(call, isHost)
+                CallLiveContent(call, isHost)
             }
         }
     }
@@ -169,7 +164,7 @@ private fun ConnectionMessage(text: String) {
 }
 
 @Composable
-private fun LoadingScreen() {
+private fun LoadingContent() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         CircularProgressIndicator(
             modifier = Modifier.size(40.dp),
@@ -177,6 +172,49 @@ private fun LoadingScreen() {
         )
         Spacer(Modifier.height(16.dp))
         Text("Joining", style = VideoTheme.typography.bodyM)
+    }
+}
+
+@Composable
+private fun CallEndedContent(call: Call) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Livestream ended", style = VideoTheme.typography.subtitleM)
+        Spacer(Modifier.height(24.dp))
+        Recordings(call)
+    }
+}
+
+@Composable
+private fun Recordings(call: Call) {
+    var recordings by remember { mutableStateOf(emptyList<CallRecording>()) }
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        call.listRecordings()
+            .onSuccess { recordings = it.recordings }
+            .onError { recordings = emptyList<CallRecording>() }
+    }
+
+    if (recordings.isEmpty()) {
+        Text("No recordings available", style = VideoTheme.typography.subtitleS)
+    } else {
+        Text("Recordings available", style = VideoTheme.typography.subtitleS)
+        Spacer(Modifier.height(8.dp))
+
+        recordings.forEach {
+            Text(
+                text = it.filename,
+                style = VideoTheme.typography.bodyM,
+                modifier = Modifier.clickable {
+                    try {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, it.url.toUri()))
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error opening recording: $e")
+                    }
+                }
+            )
+            Spacer(Modifier.height(8.dp))
+        }
     }
 }
 
@@ -196,7 +234,9 @@ private fun Backstage(call: Call, isHost: Boolean) {
             Text("Livestream will start soon", style = VideoTheme.typography.subtitleM)
         }
 
-        val waitingCount by call.state.session.map { it?.participants?.count { it.role != "host" } }.collectAsStateWithLifecycle(null)
+        val waitingCount by call.state.session.map {
+            it?.participants?.count { it.role != "host" }
+        }.collectAsStateWithLifecycle(null)
 
         waitingCount?.let {
             Spacer(Modifier.height(16.dp))
@@ -306,41 +346,7 @@ fun CallActionButton(modifier: Modifier = Modifier, text: String, onClick: () ->
 }
 
 @Composable
-private fun Recordings(call: Call) {
-    var recordings by remember { mutableStateOf(emptyList<CallRecording>()) }
-    val context = LocalContext.current
-
-    LaunchedEffect(Unit) {
-        call.listRecordings()
-            .onSuccess { recordings = it.recordings }
-            .onError { recordings = emptyList<CallRecording>() }
-    }
-
-    if (recordings.isEmpty()) {
-        Text("No recordings available", style = VideoTheme.typography.subtitleS)
-    } else {
-        Text("Recordings available", style = VideoTheme.typography.subtitleS)
-        Spacer(Modifier.height(8.dp))
-
-        recordings.forEach {
-            Text(
-                text = it.filename,
-                style = VideoTheme.typography.bodyM,
-                modifier = Modifier.clickable {
-                    try {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, it.url.toUri()))
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error opening recording: $e")
-                    }
-                }
-            )
-            Spacer(Modifier.height(8.dp))
-        }
-    }
-}
-
-@Composable
-private fun Video(call: Call, isHost: Boolean) {
+private fun CallLiveContent(call: Call, isHost: Boolean) {
     val members by call.state.members.collectAsStateWithLifecycle()
     val hostIds = members.filter { it.role == "host" }.map { it.user.id }
     val participants by call.state.participants.collectAsStateWithLifecycle()
