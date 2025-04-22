@@ -26,14 +26,14 @@ data class UserCredentials(
 ) {
     companion object {
         val host = UserCredentials(
-            id = "livestream-host",
+            id = "live-host",
             name = "Host",
             token = StreamVideo.devToken("live-host"),
             isHost = true,
         )
 
         val viewer = UserCredentials(
-            id = "livestream-viewer",
+            id = "live-viewer",
             name = "Viewer",
             token = StreamVideo.devToken("live-viewer"),
             isHost = false,

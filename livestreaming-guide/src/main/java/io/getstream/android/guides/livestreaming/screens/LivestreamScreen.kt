@@ -95,9 +95,6 @@ fun LivestreamScreen(navController: NavController, callId: String, streamVideo: 
     LivestreamScreenContents(call, isLoading, isHost)
 
     BackHandler {
-        if (isHost) {
-            scope.launch { call.stopLive() }
-        }
         call.leave()
         navController.popBackStack()
     }
@@ -215,7 +212,7 @@ private fun Backstage(call: Call, isHost: Boolean) {
             Spacer(Modifier.height(16.dp))
             Text("Camera preview", style = VideoTheme.typography.subtitleS)
             Spacer(Modifier.height(16.dp))
-            VideoFeed(call, track, isPreview = true)
+            VideoFeed(call, track, isHost = true)
             Spacer(Modifier.height(16.dp))
         }
     }
@@ -225,7 +222,7 @@ private fun Backstage(call: Call, isHost: Boolean) {
 private fun VideoFeed(
     call: Call,
     videoTrack: ParticipantState.Video?,
-    isPreview: Boolean = false,
+    isHost: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val videoFallbackContent = @Composable {
@@ -234,7 +231,7 @@ private fun VideoFeed(
 
     VideoRenderer(
         modifier = modifier.then(
-            if (isPreview) {
+            if (isHost) {
                 Modifier.height(320.dp)
             } else {
                 Modifier.fillMaxSize()
@@ -243,7 +240,7 @@ private fun VideoFeed(
         call = call,
         video = videoTrack,
         videoRendererConfig = videoRenderConfig {
-            this.videoScalingType = VideoScalingType.SCALE_ASPECT_FILL
+            this.videoScalingType = if (isHost) VideoScalingType.SCALE_ASPECT_FIT else VideoScalingType.SCALE_ASPECT_FILL
             this.fallbackContent = { videoFallbackContent }
         },
     )
@@ -348,7 +345,12 @@ private fun Video(call: Call, isHost: Boolean) {
     val hostIds = members.filter { it.role == "host" }.map { it.user.id }
     val participants by call.state.participants.collectAsStateWithLifecycle()
     val host = participants.firstOrNull { it.userId.value in hostIds }
-    val track = host?.video?.collectAsStateWithLifecycle()?.value
+    val track = if (isHost) {
+        val localParticipant by call.state.localParticipant.collectAsStateWithLifecycle()
+        localParticipant?.video?.collectAsStateWithLifecycle()?.value
+    } else {
+        host?.video?.collectAsStateWithLifecycle()?.value
+    }
     val totalParticipants by call.state.totalParticipants.collectAsStateWithLifecycle()
     val viewers = max(0, totalParticipants - 1)
     val duration by call.state.duration.collectAsStateWithLifecycle()

@@ -2,7 +2,6 @@ package io.getstream.android.guides.livestreaming
 
 import android.content.Context
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -15,9 +14,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import io.getstream.android.guides.livestreaming.screens.LivestreamScreen
 import io.getstream.android.guides.livestreaming.screens.MainScreen
+import io.getstream.log.Priority
 import io.getstream.video.android.core.StreamVideo
 import io.getstream.video.android.core.StreamVideoBuilder
 import io.getstream.video.android.core.call.CallType
+import io.getstream.video.android.core.logging.LoggingLevel
 import io.getstream.video.android.core.notifications.NotificationConfig
 import io.getstream.video.android.core.notifications.internal.service.CallServiceConfigRegistry
 import io.getstream.video.android.core.notifications.internal.service.DefaultCallConfigurations
@@ -31,9 +32,7 @@ fun NavHost(
     val context = LocalContext.current
 
     NavHost(
-        modifier = Modifier
-            .fillMaxSize()
-            .systemBarsPadding(),
+        modifier = Modifier.fillMaxSize(),
         navController = navController,
         startDestination = startDestination,
     ) {
@@ -85,9 +84,7 @@ sealed class Screens(val route: String) {
 }
 
 private fun initStreamVideo(context: Context, userCredentials: UserCredentials): StreamVideo {
-    StreamVideo.removeClient()
-
-    return StreamVideoBuilder(
+    return StreamVideo.instanceOrNull() ?: StreamVideoBuilder(
         context = context,
         apiKey = "k436tyde94hj",
         user = User(id = userCredentials.id, name = userCredentials.name),
@@ -95,6 +92,7 @@ private fun initStreamVideo(context: Context, userCredentials: UserCredentials):
         notificationConfig = NotificationConfig(
             enableCallNotificationUpdates = false,
         ),
+        loggingLevel = LoggingLevel(priority = Priority.DEBUG),
         callServiceConfigRegistry = CallServiceConfigRegistry().apply {
             if (userCredentials.isHost) {
                 register(CallType.Livestream.name, DefaultCallConfigurations.livestream)
