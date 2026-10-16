@@ -42,8 +42,8 @@ android {
 }
 
 dependencies {
-  implementation("io.getstream:stream-video-android-ui-compose:1.5.0")
-  implementation("io.getstream:stream-video-android-previewdata:1.5.0")
+  implementation(libs.stream.video.ui.compose)
+  implementation(libs.stream.video.ui.previewdata)
 
   implementation(libs.androidx.compose.navigation)
   implementation(libs.androidx.core.ktx)

@@ -9,7 +9,7 @@ plugins {
 
 android {
   namespace = "io.getstream.android.samples.videocall"
-  compileSdk = 34
+  compileSdk = 35
 
   defaultConfig {
     applicationId = "io.getstream.android.samples.videocall"
